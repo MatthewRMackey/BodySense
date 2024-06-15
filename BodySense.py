@@ -2,6 +2,7 @@ from tkinter import *
 from tkinter import messagebox
 import sqlite3
 from datetime import date
+from datetime import datetime
 import os
 from pathlib import Path
 import shutil
@@ -116,7 +117,8 @@ def backup_database():
 
 # Save button callback
 def enter_command(glu_entry: Entry, ket_entry: Entry, bp_hi_entry: Entry, bp_low_entry: Entry, wt_entry: Entry,
-                 glu_listbox: Listbox, ket_listbox: Listbox, bp_listbox: Listbox, wt_listbox: Listbox, is_morning: bool):
+                 glu_listbox: Listbox, ket_listbox: Listbox, bp_listbox: Listbox, wt_listbox: Listbox, is_morning: bool,
+                 day_entry: Entry, month_entry: Entry, year_entry: Entry):
     glucose = glu_entry.get()
     ketones = ket_entry.get()
     bp_high = bp_hi_entry.get()
@@ -124,20 +126,20 @@ def enter_command(glu_entry: Entry, ket_entry: Entry, bp_hi_entry: Entry, bp_low
     weight = wt_entry.get()
 
     if glucose != "":
-        insert_db_entry(TYPE_GLU, date.today(), is_morning, glucose)
+        insert_db_entry(TYPE_GLU, date(year=int(year_entry.get()), month=int(month_entry.get()), day=int(day_entry.get())), is_morning, glucose)
         glu_entry.delete(0, END)
 
     if ketones != "":
-        insert_db_entry(TYPE_KET, date.today(), is_morning, ketones)
+        insert_db_entry(TYPE_KET, date(year=int(year_entry.get()), month=int(month_entry.get()), day=int(day_entry.get())), is_morning, ketones)
         ket_entry.delete(0, END)
     
     if bp_high != "" or bp_low != "":
-        insert_db_entry(TYPE_BP, date.today(), is_morning, (bp_high, bp_low))
+        insert_db_entry(TYPE_BP, date(year=int(year_entry.get()), month=int(month_entry.get()), day=int(day_entry.get())), is_morning, (bp_high, bp_low))
         bp_hi_entry.delete(0, END)
         bp_low_entry.delete(0, END)
     
     if weight != "":
-        insert_db_entry(TYPE_WT, date.today(), is_morning, weight)
+        insert_db_entry(TYPE_WT, date(year=int(year_entry.get()), month=int(month_entry.get()), day=int(day_entry.get())), is_morning, weight)
         wt_entry.delete(0, END)
 
     update_listboxes(glu_listbox, ket_listbox, bp_listbox, wt_listbox)
@@ -181,14 +183,22 @@ def print_report_command():
 # Updates listbox entries
 def update_listboxes(glu_listbox: Listbox, ket_listbox: Listbox, bp_listbox: Listbox, wt_listbox: Listbox):
     
+    #Get data
     (glucose_data, ketones_data, bp_data, wt_data) = get_database_entries()
 
-    # Add sample data to the listboxes
+    # Sort data by most recent date
+    glucose_data = sorted(glucose_data, key=get_date)
+    ketones_data = sorted(ketones_data, key=get_date)
+    bp_data = sorted(bp_data, key=get_date)
+    wt_data = sorted(wt_data, key=get_date)
+
+    # Delete listbox contents
     glu_listbox.delete(0, END)
     ket_listbox.delete(0, END)
     bp_listbox.delete(0, END)
     wt_listbox.delete(0, END)
 
+    # Add headers to the listboxes
     glu_listbox.insert(0, f"{'ID':^{ID_WIDTH}} {'DATE':^{DATE_WIDTH}} {'AM/PM':^{TYPE_WIDTH}} {'GLUCOSE':^{TYPE_WIDTH}}")
     ket_listbox.insert(0, f"{'ID':^{ID_WIDTH}} {'DATE':^{DATE_WIDTH}} {'AM/PM':^{TYPE_WIDTH}} {'KETONES':^{TYPE_WIDTH}}")
     bp_listbox.insert(0, f"{'ID':^{ID_WIDTH}} {'DATE':^{DATE_WIDTH}} {'AM/PM':^{TYPE_WIDTH}} {'BP High':^{TYPE_WIDTH}} {'BP Low':^{TYPE_WIDTH}}")
@@ -199,21 +209,48 @@ def update_listboxes(glu_listbox: Listbox, ket_listbox: Listbox, bp_listbox: Lis
     bp_listbox.insert(1, f'{"-"*58:^{65}}')
     wt_listbox.insert(1, f'{"-"*49:^{55}}')
 
+    #Add data to listboxes
     for item in glucose_data:
         am_pm = "AM" if item[2] == 1 else "PM"
-        glu_listbox.insert(2, f"{item[0]:^{ID_WIDTH}} {item[1]:^{DATE_WIDTH}} {am_pm:^{TYPE_WIDTH}} {item[3]:^{TYPE_WIDTH+7}}")
+        id = str(item[0])
+        date = datetime.strptime(item[1], "%Y-%m-%d").strftime("%m-%d-%Y")
+        glu = f"{item[3]:.1f}".zfill(5)
+        while len(id) < 3:
+            id = "0"+id
+        glu_listbox.insert(2, f"{id:^{ID_WIDTH}} {date:^{DATE_WIDTH}} {am_pm:^{TYPE_WIDTH}} {glu:^{TYPE_WIDTH+7}}")
     
     for item in ketones_data:
         am_pm = "AM" if item[2] == 1 else "PM"
-        ket_listbox.insert(2, f"{item[0]:^{ID_WIDTH}} {item[1]:^{DATE_WIDTH}} {am_pm:^{TYPE_WIDTH}} {item[3]:^{TYPE_WIDTH+7}}")
+        id = str(item[0])
+        date = datetime.strptime(item[1], "%Y-%m-%d").strftime("%m-%d-%Y")
+        ket = f"{item[3]:.2f}".zfill(3)
+        while len(id) < 3:
+            id = "0"+id
+        ket_listbox.insert(2, f"{id:^{ID_WIDTH}} {date:^{DATE_WIDTH}} {am_pm:^{TYPE_WIDTH}} {ket:^{TYPE_WIDTH+7}}")
 
     for item in bp_data:
         am_pm = "AM" if item[2] == 1 else "PM"
-        bp_listbox.insert(2, f"{item[0]:^{ID_WIDTH}} {item[1]:^{DATE_WIDTH}} {am_pm:^{TYPE_WIDTH}} {item[3]:^{TYPE_WIDTH+7}} {item[4]:^{TYPE_WIDTH}}")
+        id = str(item[0])
+        date = datetime.strptime(item[1], "%Y-%m-%d").strftime("%m-%d-%Y")
+        high = f"{item[3]:.0f}".zfill(3)
+        low = f"{item[4]:.0f}".zfill(2)
+        while len(id) < 3:
+            id = "0"+id
+        bp_listbox.insert(2, f"{id:^{ID_WIDTH}} {date:^{DATE_WIDTH}} {am_pm:^{TYPE_WIDTH}} {high:^{TYPE_WIDTH+7}} {low:^{TYPE_WIDTH}}")
 
     for item in wt_data:
         am_pm = "AM" if item[2] == 1 else "PM"
-        wt_listbox.insert(2, f"{item[0]:^{ID_WIDTH}} {item[1]:^{DATE_WIDTH}} {am_pm:^{TYPE_WIDTH}} {item[3]:^{TYPE_WIDTH+7}}")
+        id = str(item[0])
+        date = datetime.strptime(item[1], "%Y-%m-%d").strftime("%m-%d-%Y")
+        wt = f"{item[3]:.1f}".zfill(5)
+        while len(id) < 3:
+            id = "0"+id
+        wt_listbox.insert(2, f"{id:^{ID_WIDTH}} {date:^{DATE_WIDTH}} {am_pm:^{TYPE_WIDTH}} {wt:^{TYPE_WIDTH+7}}")
+
+def get_date(element):
+    date_str = element[1]
+    date_obj = datetime.strptime(date_str, "%Y-%m-%d")
+    return date_obj
 
 # Centers the window
 def center_window(window):
@@ -268,16 +305,31 @@ def generate_window(window):
     is_morning = IntVar()
     is_morning.set(1)
     radio_frame = Frame(window)
-    morning = Radiobutton(radio_frame, text="Morning", variable=is_morning, value=1)
-    evening = Radiobutton(radio_frame, text="Evening", variable=is_morning, value=0)
+    morning = Radiobutton(radio_frame, text="AM", variable=is_morning, value=1)
+    evening = Radiobutton(radio_frame, text="PM", variable=is_morning, value=0)
+
+    # Create Date Input Frame
+    date_frame = Frame(window, pady=10)
+    day_label = Label(date_frame, text="DD")
+    mon_label = Label(date_frame, text="MM")
+    year_label = Label(date_frame, text="YYYY")
+    day_entry = Entry(date_frame, width=10)
+    mon_entry = Entry(date_frame, width=10)
+    year_entry = Entry(date_frame, width=10)
+    today = str(date.today())
+    
+    # Default to today
+    day_entry.insert(0, today[8:])
+    mon_entry.insert(0, today[5:7])
+    year_entry.insert(0, today[0:4])
 
     # Create the buttons
     button_frame = Frame(window)
     enter_button = Button(button_frame, text="Save", command=lambda: enter_command(glu_entry, ket_entry, bp_high_entry, bp_low_entry, wt_entry, 
-                                                                           glu_listbox, ket_listbox, bp_listbox, wt_listbox, is_morning))
+                                                                           glu_listbox, ket_listbox, bp_listbox, wt_listbox, is_morning, day_entry, mon_entry, year_entry))
     delete_button = Button(button_frame, text="Delete", command=lambda: delete_command(glu_listbox, ket_listbox, bp_listbox, wt_listbox))
-    print_report_button = Button(button_frame, text="Generate Report", command=lambda: print_report_command())
-    make_backup_button = Button(button_frame, text="Make Backup", command=lambda: backup_database())
+    print_report_button = Button(button_frame, text="Print Report", command=lambda: print_report_command())
+    make_backup_button = Button(button_frame, text="Backup", command=lambda: backup_database())
 
     # Arrange the widgets in the window
     glu_label.grid(row=0, column=0)
@@ -304,17 +356,27 @@ def generate_window(window):
     wt_listbox.grid(row=2, column=7, columnspan=1)
     wt_scrollbar.grid(row=2, column=8, sticky=NS)
     
-    #Radio Button
-    morning.grid(row=0, column=0)
-    evening.grid(row=0, column=1)
-    radio_frame.grid(row=3, column=2)
+    # Date Frame
+    mon_label.grid(row=0, column=0)
+    day_label.grid(row=0, column=1)
+    year_label.grid(row=0, column=2)
+    mon_entry.grid(row=1, column=0)
+    day_entry.grid(row=1, column=1)
+    year_entry.grid(row=1, column=2)
+    date_frame.grid(row=3, column=2)
 
+    # Buttons
     enter_button.grid(row=0, column=0)
     delete_button.grid(row=0, column=1)
     print_report_button.grid(row=0, column=2)
     make_backup_button.grid(row=0, column=3)
     button_frame.grid(row=3, column=4)
     
+    # Radio Button
+    morning.grid(row=0, column=0)
+    evening.grid(row=0, column=1)
+    radio_frame.grid(row=3, column=5)
+
     # Center window
     center_window(window)
 
