@@ -11,9 +11,9 @@ TYPE_GLU = "glu"
 TYPE_KET = "ket"
 TYPE_BP = "bp"
 TYPE_WT = "wt"
-ID_WIDTH = 7
-DATE_WIDTH = 13
-TYPE_WIDTH = 17
+ID_WIDTH = 11
+DATE_WIDTH = 15
+TYPE_WIDTH = 19
 LEADING_SPACE = 15
 
 # Determine the root up to the current user's home directory (Windows only)
@@ -199,15 +199,15 @@ def update_listboxes(glu_listbox: Listbox, ket_listbox: Listbox, bp_listbox: Lis
     wt_listbox.delete(0, END)
 
     # Add headers to the listboxes
-    glu_listbox.insert(0, f"{'ID':^{ID_WIDTH}} {'DATE':^{DATE_WIDTH}} {'AM/PM':^{TYPE_WIDTH}} {'GLUCOSE':^{TYPE_WIDTH}}")
-    ket_listbox.insert(0, f"{'ID':^{ID_WIDTH}} {'DATE':^{DATE_WIDTH}} {'AM/PM':^{TYPE_WIDTH}} {'KETONES':^{TYPE_WIDTH}}")
-    bp_listbox.insert(0, f"{'ID':^{ID_WIDTH}} {'DATE':^{DATE_WIDTH}} {'AM/PM':^{TYPE_WIDTH}} {'BP High':^{TYPE_WIDTH}} {'BP Low':^{TYPE_WIDTH}}")
-    wt_listbox.insert(0, f"{'ID':^{ID_WIDTH}} {'DATE':^{DATE_WIDTH}} {'AM/PM':^{TYPE_WIDTH}} {'WEIGHT':^{TYPE_WIDTH}}")
+    glu_listbox.insert(0, f"| {'ID':^{ID_WIDTH+1}} | {'DATE':^{DATE_WIDTH+4}} | {'AM/PM':^{TYPE_WIDTH-4}} | {'GLUCOSE':^{TYPE_WIDTH-6}} |")
+    ket_listbox.insert(0, f"| {'ID':^{ID_WIDTH+2}} |{'DATE':^{DATE_WIDTH+4}} | {'AM/PM':^{TYPE_WIDTH-4}} | {'KETONES':^{TYPE_WIDTH-6}} |")
+    bp_listbox.insert(0, f"| {'ID':^{ID_WIDTH+1}} | {'DATE':^{DATE_WIDTH+4}} | {'AM/PM':^{TYPE_WIDTH-4}} | {'BP High':^{TYPE_WIDTH-5}} | {'BP Low':^{TYPE_WIDTH-5}} |")
+    wt_listbox.insert(0, f"| {'ID':^{ID_WIDTH+1}} | {'DATE':^{DATE_WIDTH+4}} | {'AM/PM':^{TYPE_WIDTH-4}} | {'WEIGHT':^{TYPE_WIDTH-5}} |")
 
-    glu_listbox.insert(1, f'{"-"*49:^{55}}')
-    ket_listbox.insert(1, f'{"-"*49:^{55}}')
-    bp_listbox.insert(1, f'{"-"*58:^{65}}')
-    wt_listbox.insert(1, f'{"-"*49:^{55}}')
+    glu_listbox.insert(1, f'{"-"*65:^{55}}')
+    ket_listbox.insert(1, f'{"-"*65:^{55}}')
+    bp_listbox.insert(1, f'{"-"*75:^{65}}')
+    wt_listbox.insert(1, f'{"-"*65:^{55}}')
 
     #Add data to listboxes
     for item in glucose_data:
@@ -217,7 +217,7 @@ def update_listboxes(glu_listbox: Listbox, ket_listbox: Listbox, bp_listbox: Lis
         glu = f"{item[3]:.1f}".zfill(5)
         while len(id) < 3:
             id = "0"+id
-        glu_listbox.insert(2, f"{id:^{ID_WIDTH}} {date:^{DATE_WIDTH}} {am_pm:^{TYPE_WIDTH}} {glu:^{TYPE_WIDTH+7}}")
+        glu_listbox.insert(2, f"| {id:^{ID_WIDTH}} | {date:^{DATE_WIDTH}} | {am_pm:^{TYPE_WIDTH}} | {glu:^{TYPE_WIDTH}} |")
     
     for item in ketones_data:
         am_pm = "AM" if item[2] == 1 else "PM"
@@ -226,7 +226,7 @@ def update_listboxes(glu_listbox: Listbox, ket_listbox: Listbox, bp_listbox: Lis
         ket = f"{item[3]:.2f}".zfill(3)
         while len(id) < 3:
             id = "0"+id
-        ket_listbox.insert(2, f"{id:^{ID_WIDTH}} {date:^{DATE_WIDTH}} {am_pm:^{TYPE_WIDTH}} {ket:^{TYPE_WIDTH+7}}")
+        ket_listbox.insert(2, f"| {id:^{ID_WIDTH}} | {date:^{DATE_WIDTH}} | {am_pm:^{TYPE_WIDTH}} | {ket:^{TYPE_WIDTH}} |")
 
     for item in bp_data:
         am_pm = "AM" if item[2] == 1 else "PM"
@@ -236,7 +236,7 @@ def update_listboxes(glu_listbox: Listbox, ket_listbox: Listbox, bp_listbox: Lis
         low = f"{item[4]:.0f}".zfill(2)
         while len(id) < 3:
             id = "0"+id
-        bp_listbox.insert(2, f"{id:^{ID_WIDTH}} {date:^{DATE_WIDTH}} {am_pm:^{TYPE_WIDTH}} {high:^{TYPE_WIDTH+7}} {low:^{TYPE_WIDTH}}")
+        bp_listbox.insert(2, f"| {id:^{ID_WIDTH}} | {date:^{DATE_WIDTH}} | {am_pm:^{TYPE_WIDTH}} | {high:^{TYPE_WIDTH}} | {low:^{TYPE_WIDTH}} |")
 
     for item in wt_data:
         am_pm = "AM" if item[2] == 1 else "PM"
@@ -245,7 +245,7 @@ def update_listboxes(glu_listbox: Listbox, ket_listbox: Listbox, bp_listbox: Lis
         wt = f"{item[3]:.1f}".zfill(5)
         while len(id) < 3:
             id = "0"+id
-        wt_listbox.insert(2, f"{id:^{ID_WIDTH}} {date:^{DATE_WIDTH}} {am_pm:^{TYPE_WIDTH}} {wt:^{TYPE_WIDTH+7}}")
+        wt_listbox.insert(2, f"| {id:^{ID_WIDTH}} | {date:^{DATE_WIDTH}} | {am_pm:^{TYPE_WIDTH}} | {wt:^{TYPE_WIDTH}} |")
 
 def get_date(element):
     date_str = element[1]
@@ -283,19 +283,19 @@ def generate_window(window):
     wt_entry = Entry(window)
      
     # Create listboxs and scrollbars
-    glu_listbox = Listbox(window, width=45, height=30)
+    glu_listbox = Listbox(window, width=49, height=30)
     glu_scrollbar = Scrollbar(window, orient=VERTICAL, command=glu_listbox.yview)
     glu_listbox.config(yscrollcommand=glu_scrollbar.set)
     
-    ket_listbox = Listbox(window, width=45, height=30)
+    ket_listbox = Listbox(window, width=49, height=30)
     ket_scrollbar = Scrollbar(window, orient=VERTICAL, command=ket_listbox.yview)
     ket_listbox.config(yscrollcommand=ket_scrollbar.set)
 
-    bp_listbox = Listbox(window, width=55, height=30)
+    bp_listbox = Listbox(window, width=61, height=30)
     bp_scrollbar = Scrollbar(window, orient=VERTICAL, command=bp_listbox.yview)
     bp_listbox.config(yscrollcommand=bp_scrollbar.set)
 
-    wt_listbox = Listbox(window, width=45, height=30)
+    wt_listbox = Listbox(window, width=49, height=30)
     wt_scrollbar = Scrollbar(window, orient=VERTICAL, command=wt_listbox.yview)
     wt_listbox.config(yscrollcommand=wt_scrollbar.set)
     
