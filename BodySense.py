@@ -1,11 +1,8 @@
 from tkinter import *
 from tkinter import messagebox
-import sqlite3
 from datetime import date
 from datetime import datetime
-import os
-from pathlib import Path
-import shutil
+from EntryDatabase import EntryDatabase
 
 TYPE_GLU = "glu"
 TYPE_KET = "ket"
@@ -15,105 +12,6 @@ ID_WIDTH = 11
 DATE_WIDTH = 15
 TYPE_WIDTH = 19
 LEADING_SPACE = 15
-
-# Determine the root up to the current user's home directory (Windows only)
-def get_path_root():
-    cwd = os.getcwd()
-    slashes = 0
-    index = 0
-    root_path = ""
-    while slashes < 3:
-        root_path += cwd[index]
-        if cwd[index] == "\\":
-            slashes += 1
-        index += 1
-    return root_path
-
-# Generates Database
-def create_database(db_file):
-    """Creates a new SQLite database with a table for entries."""
-    conn = sqlite3.connect(db_file)
-    c = conn.cursor()
-    
-    # Create table (if it doesn't exist)
-    c.execute("CREATE TABLE IF NOT EXISTS "+"glucose "+"(id INTEGER PRIMARY KEY AUTOINCREMENT, date DATETIME, morning INTEGER, glucose real)")
-    conn.commit()
-    c.execute("CREATE TABLE IF NOT EXISTS "+"ketones "+"(id INTEGER PRIMARY KEY AUTOINCREMENT, date DATETIME, morning INTEGER, ketones real)")
-    conn.commit()
-    c.execute("CREATE TABLE IF NOT EXISTS "+"bloodpressure "+"(id INTEGER PRIMARY KEY AUTOINCREMENT, date DATETIME, morning INTEGER, high real, low real)")
-    conn.commit()
-    c.execute("CREATE TABLE IF NOT EXISTS "+"weight "+"(id INTEGER PRIMARY KEY AUTOINCREMENT, date DATETIME, morning INTEGER, weight real)")
-    conn.commit()
-
-    conn.close()
-
-# Inserts into Database
-def insert_db_entry(type, date, morning, value):
-    """Inserts a new entry into the database."""
-    conn = sqlite3.connect(db_path)
-    c = conn.cursor()
-
-    if type == TYPE_GLU:
-        create_str = "INSERT INTO "+"glucose "+"(date, morning, glucose) VALUES (?, ?, ?)" 
-        c.execute(create_str, (date, morning.get(), value))
-    elif type == TYPE_KET:
-        create_str = "INSERT INTO "+"ketones "+"(date, morning, ketones) VALUES (?, ?, ?)"
-        c.execute(create_str, (date, morning.get(), value))
-    elif type == TYPE_BP:
-        create_str = "INSERT INTO "+"bloodpressure "+"(date, morning, high, low) VALUES (?, ?, ?, ?)"
-        c.execute(create_str, (date, morning.get(), value[0], value[1]))
-    elif type == TYPE_WT:
-        create_str = "INSERT INTO "+"weight "+"(date, morning, weight) VALUES (?, ?, ?)"
-        c.execute(create_str, (date, morning.get(), value))
-
-    
-    conn.commit()
-    conn.close()
-
-# Deletes from the Database
-def delete_db_entry(type, entry_id):
-    """Deletes an entry from the database based on its ID."""
-    conn = sqlite3.connect(db_path)
-    c = conn.cursor()
-
-    if type == TYPE_GLU:
-        create_str = "DELETE FROM "+"glucose "+"WHERE id = ?" 
-    elif type == TYPE_KET:
-        create_str = "DELETE FROM "+"ketones "+"WHERE id = ?" 
-    elif type == TYPE_BP:
-        create_str = "DELETE FROM "+"bloodpressure "+"WHERE id = ?" 
-    elif type == TYPE_WT:
-        create_str = "DELETE FROM "+"weight "+"WHERE id = ?" 
-
-    # Delete entry
-    c.execute(create_str, (entry_id,))
-    conn.commit()
-    conn.close()
-
-# Get all database entries from both tables
-def get_database_entries():
-    conn = sqlite3.connect(db_path)
-    c = conn.cursor()
-
-    tables = []
-    c.execute("SELECT * FROM glucose")
-    tables.append(c.fetchall())
-    c.execute("SELECT * FROM ketones")
-    tables.append(c.fetchall())
-    c.execute("SELECT * FROM bloodpressure")
-    tables.append(c.fetchall())
-    c.execute("SELECT * FROM weight")
-    tables.append(c.fetchall())
-
-    return (t for t in tables)
-
-# Backup database keeping the ten most recent backups
-##TODO Need to fix the ordering of backups to delete the oldest one when there are 10
-def backup_database():
-    os.makedirs(get_path_root()+"\\BodySense\\backups", exist_ok=True)
-    backups = [f for f in Path(db_path[0:db_path.rindex("\\")]+"\\backups").iterdir() if f.is_file()]
-    backup_count = len(backups)
-    shutil.copy2(db_path, db_path[0:-11]+"\\backups\\backup_"+str(backup_count)+"_On_"+str(date.today())+".db")
 
 # Save button callback
 def enter_command(glu_entry: Entry, ket_entry: Entry, bp_hi_entry: Entry, bp_low_entry: Entry, wt_entry: Entry,
@@ -126,20 +24,20 @@ def enter_command(glu_entry: Entry, ket_entry: Entry, bp_hi_entry: Entry, bp_low
     weight = wt_entry.get()
 
     if glucose != "":
-        insert_db_entry(TYPE_GLU, date(year=int(year_entry.get()), month=int(month_entry.get()), day=int(day_entry.get())), is_morning, glucose)
+        entry_db.insert_db_entry(TYPE_GLU, date(year=int(year_entry.get()), month=int(month_entry.get()), day=int(day_entry.get())), is_morning, glucose)
         glu_entry.delete(0, END)
 
     if ketones != "":
-        insert_db_entry(TYPE_KET, date(year=int(year_entry.get()), month=int(month_entry.get()), day=int(day_entry.get())), is_morning, ketones)
+        entry_db.insert_db_entry(TYPE_KET, date(year=int(year_entry.get()), month=int(month_entry.get()), day=int(day_entry.get())), is_morning, ketones)
         ket_entry.delete(0, END)
     
     if bp_high != "" or bp_low != "":
-        insert_db_entry(TYPE_BP, date(year=int(year_entry.get()), month=int(month_entry.get()), day=int(day_entry.get())), is_morning, (bp_high, bp_low))
+        entry_db.insert_db_entry(TYPE_BP, date(year=int(year_entry.get()), month=int(month_entry.get()), day=int(day_entry.get())), is_morning, (bp_high, bp_low))
         bp_hi_entry.delete(0, END)
         bp_low_entry.delete(0, END)
     
     if weight != "":
-        insert_db_entry(TYPE_WT, date(year=int(year_entry.get()), month=int(month_entry.get()), day=int(day_entry.get())), is_morning, weight)
+        entry_db.insert_db_entry(TYPE_WT, date(year=int(year_entry.get()), month=int(month_entry.get()), day=int(day_entry.get())), is_morning, weight)
         wt_entry.delete(0, END)
 
     update_listboxes(glu_listbox, ket_listbox, bp_listbox, wt_listbox)
@@ -155,24 +53,24 @@ def delete_command(glu_listbox: Listbox, ket_listbox: Listbox, bp_listbox: Listb
         return
     elif selected_indices1 != ():
         strip_text = glu_listbox.get(selected_indices1[0]).strip()
-        text = strip_text[0:list(strip_text).index(" ")]
+        text = strip_text[1:list(strip_text).index("|",1)].strip()
         if messagebox.askokcancel("Confirmation", "Are you sure you want to delete Glucose ID: " + str(text)):
-            delete_db_entry(TYPE_GLU, text)
+            entry_db.delete_db_entry(TYPE_GLU, text)
     elif selected_indices2 != ():
         strip_text = ket_listbox.get(selected_indices2[0]).strip()
-        text = strip_text[0:list(strip_text).index(" ")]
+        text = strip_text[1:list(strip_text).index("|",1)].strip()
         if messagebox.askokcancel("Confirmation", "Are you sure you want to delete Ketones ID: " + str(text)):
-            delete_db_entry(TYPE_KET, text)
+            entry_db.delete_db_entry(TYPE_KET, text)
     elif selected_indices3 != ():
         strip_text = bp_listbox.get(selected_indices3[0]).strip()
-        text = strip_text[0:list(strip_text).index(" ")]
+        text = strip_text[1:list(strip_text).index("|",1)].strip()
         if messagebox.askokcancel("Confirmation", "Are you sure you want to delete BP ID: " + str(text)):
-            delete_db_entry(TYPE_BP, text)
+            entry_db.delete_db_entry(TYPE_BP, text)
     elif selected_indices4 != ():
         strip_text = wt_listbox.get(selected_indices4[0]).strip()
-        text = strip_text[0:list(strip_text).index(" ")]
+        text = strip_text[1:list(strip_text).index("|",1)].strip()
         if messagebox.askokcancel("Confirmation", "Are you sure you want to delete Weight ID: " + str(text)):
-            delete_db_entry(TYPE_WT, text)
+            entry_db.delete_db_entry(TYPE_WT, text)
 
     update_listboxes(glu_listbox, ket_listbox, bp_listbox, wt_listbox)
 
@@ -182,75 +80,45 @@ def print_report_command():
 
 # Updates listbox entries
 def update_listboxes(glu_listbox: Listbox, ket_listbox: Listbox, bp_listbox: Listbox, wt_listbox: Listbox):
-    
-    #Get data
-    (glucose_data, ketones_data, bp_data, wt_data) = get_database_entries()
+    bp_data_indx = 2
+    data_table_names = ['GLUCOSE', 'KETONES', ('BP HIGH', 'BP LOW'), 'WEIGHT']
+    data_tables = list(entry_db.get_all_database_entries())
+    lboxes = [glu_listbox, ket_listbox, bp_listbox, wt_listbox]
 
-    # Sort data by most recent date
-    glucose_data = sorted(glucose_data, key=get_date)
-    ketones_data = sorted(ketones_data, key=get_date)
-    bp_data = sorted(bp_data, key=get_date)
-    wt_data = sorted(wt_data, key=get_date)
+    for indx, lbox in enumerate(lboxes):
+        sorted_data = sorted(data_tables[indx], key=get_date)
+        lbox.delete(0, END)
+        if indx != bp_data_indx:
+            lbox.insert(0, f"| {'ID':^{ID_WIDTH+1}} | {'DATE':^{DATE_WIDTH+4}} | {'AM/PM':^{TYPE_WIDTH-4}} | {data_table_names[indx]:^{TYPE_WIDTH-6}} |")
+            lbox.insert(1, f'{"-"*65:^{55}}')
+            for item in data_tables[indx]:
+                am_pm = "AM" if item[2] == 1 else "PM"
+                id = str(item[0])
+                date = datetime.strptime(item[1], "%Y-%m-%d").strftime("%m-%d-%Y")
+                glu = f"{item[3]:.1f}".zfill(5)
+                while len(id) < 3:
+                    id = "0"+id
+                lbox.insert(2, f"| {id:^{ID_WIDTH}} | {date:^{DATE_WIDTH}} | {am_pm:^{TYPE_WIDTH}} | {glu:^{TYPE_WIDTH}} |")
 
-    # Delete listbox contents
-    glu_listbox.delete(0, END)
-    ket_listbox.delete(0, END)
-    bp_listbox.delete(0, END)
-    wt_listbox.delete(0, END)
+        else:
+            lbox.insert(0, f"| {'ID':^{ID_WIDTH+1}} | {'DATE':^{DATE_WIDTH+4}} | {'AM/PM':^{TYPE_WIDTH-4}} | {data_table_names[indx][0]:^{TYPE_WIDTH-5}} | {data_table_names[indx][1]:^{TYPE_WIDTH-5}} |")
+            lbox.insert(1, f'{"-"*75:^{65}}')
+            for item in data_tables[indx]:
+                am_pm = "AM" if item[2] == 1 else "PM"
+                id = str(item[0])
+                date = datetime.strptime(item[1], "%Y-%m-%d").strftime("%m-%d-%Y")
+                high = f"{item[3]:.0f}".zfill(3)
+                low = f"{item[4]:.0f}".zfill(2)
+                while len(id) < 3:
+                    id = "0"+id
+                lbox.insert(2, f"| {id:^{ID_WIDTH}} | {date:^{DATE_WIDTH}} | {am_pm:^{TYPE_WIDTH}} | {high:^{TYPE_WIDTH}} | {low:^{TYPE_WIDTH}} |")
 
-    # Add headers to the listboxes
-    glu_listbox.insert(0, f"| {'ID':^{ID_WIDTH+1}} | {'DATE':^{DATE_WIDTH+4}} | {'AM/PM':^{TYPE_WIDTH-4}} | {'GLUCOSE':^{TYPE_WIDTH-6}} |")
-    ket_listbox.insert(0, f"| {'ID':^{ID_WIDTH+2}} |{'DATE':^{DATE_WIDTH+4}} | {'AM/PM':^{TYPE_WIDTH-4}} | {'KETONES':^{TYPE_WIDTH-6}} |")
-    bp_listbox.insert(0, f"| {'ID':^{ID_WIDTH+1}} | {'DATE':^{DATE_WIDTH+4}} | {'AM/PM':^{TYPE_WIDTH-4}} | {'BP High':^{TYPE_WIDTH-5}} | {'BP Low':^{TYPE_WIDTH-5}} |")
-    wt_listbox.insert(0, f"| {'ID':^{ID_WIDTH+1}} | {'DATE':^{DATE_WIDTH+4}} | {'AM/PM':^{TYPE_WIDTH-4}} | {'WEIGHT':^{TYPE_WIDTH-5}} |")
-
-    glu_listbox.insert(1, f'{"-"*65:^{55}}')
-    ket_listbox.insert(1, f'{"-"*65:^{55}}')
-    bp_listbox.insert(1, f'{"-"*75:^{65}}')
-    wt_listbox.insert(1, f'{"-"*65:^{55}}')
-
-    #Add data to listboxes
-    for item in glucose_data:
-        am_pm = "AM" if item[2] == 1 else "PM"
-        id = str(item[0])
-        date = datetime.strptime(item[1], "%Y-%m-%d").strftime("%m-%d-%Y")
-        glu = f"{item[3]:.1f}".zfill(5)
-        while len(id) < 3:
-            id = "0"+id
-        glu_listbox.insert(2, f"| {id:^{ID_WIDTH}} | {date:^{DATE_WIDTH}} | {am_pm:^{TYPE_WIDTH}} | {glu:^{TYPE_WIDTH}} |")
-    
-    for item in ketones_data:
-        am_pm = "AM" if item[2] == 1 else "PM"
-        id = str(item[0])
-        date = datetime.strptime(item[1], "%Y-%m-%d").strftime("%m-%d-%Y")
-        ket = f"{item[3]:.2f}".zfill(3)
-        while len(id) < 3:
-            id = "0"+id
-        ket_listbox.insert(2, f"| {id:^{ID_WIDTH}} | {date:^{DATE_WIDTH}} | {am_pm:^{TYPE_WIDTH}} | {ket:^{TYPE_WIDTH}} |")
-
-    for item in bp_data:
-        am_pm = "AM" if item[2] == 1 else "PM"
-        id = str(item[0])
-        date = datetime.strptime(item[1], "%Y-%m-%d").strftime("%m-%d-%Y")
-        high = f"{item[3]:.0f}".zfill(3)
-        low = f"{item[4]:.0f}".zfill(2)
-        while len(id) < 3:
-            id = "0"+id
-        bp_listbox.insert(2, f"| {id:^{ID_WIDTH}} | {date:^{DATE_WIDTH}} | {am_pm:^{TYPE_WIDTH}} | {high:^{TYPE_WIDTH}} | {low:^{TYPE_WIDTH}} |")
-
-    for item in wt_data:
-        am_pm = "AM" if item[2] == 1 else "PM"
-        id = str(item[0])
-        date = datetime.strptime(item[1], "%Y-%m-%d").strftime("%m-%d-%Y")
-        wt = f"{item[3]:.1f}".zfill(5)
-        while len(id) < 3:
-            id = "0"+id
-        wt_listbox.insert(2, f"| {id:^{ID_WIDTH}} | {date:^{DATE_WIDTH}} | {am_pm:^{TYPE_WIDTH}} | {wt:^{TYPE_WIDTH}} |")
 
 def get_date(element):
     date_str = element[1]
     date_obj = datetime.strptime(date_str, "%Y-%m-%d")
     return date_obj
+
 
 # Centers the window
 def center_window(window):
@@ -262,6 +130,7 @@ def center_window(window):
     x = (screen_width - width) // 2
     y = (screen_height - height) // 2
     window.geometry(f"{width}x{height}+{x}+{y}")
+
 
 # Builds window elements
 def generate_window(window):
@@ -329,7 +198,7 @@ def generate_window(window):
                                                                            glu_listbox, ket_listbox, bp_listbox, wt_listbox, is_morning, day_entry, mon_entry, year_entry))
     delete_button = Button(button_frame, text="Delete", command=lambda: delete_command(glu_listbox, ket_listbox, bp_listbox, wt_listbox))
     print_report_button = Button(button_frame, text="Print Report", command=lambda: print_report_command())
-    make_backup_button = Button(button_frame, text="Backup", command=lambda: backup_database())
+    make_backup_button = Button(button_frame, text="Backup", command=lambda: entry_db.backup_database())
 
     # Arrange the widgets in the window
     glu_label.grid(row=0, column=0)
@@ -380,12 +249,10 @@ def generate_window(window):
     # Center window
     center_window(window)
 
-os.makedirs(get_path_root()+"\\BodySense", exist_ok=True)
-db_path = get_path_root() + "BodySense\\readings.db"
+# Create database object
+entry_db = EntryDatabase()
 
 if __name__ == "__main__":
-    # Create Databases if don't exist
-    create_database(db_path)
     
     # Create the main window
     window = Tk()
