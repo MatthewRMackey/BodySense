@@ -40,7 +40,6 @@ class EntryDatabase:
         """Inserts a new entry into the database."""
         conn = sqlite3.connect(self.path)
         c = conn.cursor()
-
         if type == TYPE_GLU:
             create_str = "INSERT INTO "+"glucose "+"(date, morning, glucose) VALUES (?, ?, ?)" 
             c.execute(create_str, (date, morning.get(), value))

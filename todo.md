@@ -6,5 +6,6 @@
 - Add pdf and printing
 
 # TODO v 1.2
-- Refactor project into a simplified MVC styled structure to reduce redundancy.
+- git Refactor project into a simplified MVC styled structure to reduce redundancy.
+- Database entries should be put into a dictionary keyed by date
 - Make ID dynamic based on number of digits in largest ID.

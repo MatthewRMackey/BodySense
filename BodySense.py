@@ -13,85 +13,68 @@ DATE_WIDTH = 15
 TYPE_WIDTH = 19
 LEADING_SPACE = 15
 
-# Save button callback
+# Enter button function
 def enter_command(glu_entry: Entry, ket_entry: Entry, bp_hi_entry: Entry, bp_low_entry: Entry, wt_entry: Entry,
                  glu_listbox: Listbox, ket_listbox: Listbox, bp_listbox: Listbox, wt_listbox: Listbox, is_morning: bool,
                  day_entry: Entry, month_entry: Entry, year_entry: Entry):
-    glucose = glu_entry.get()
-    ketones = ket_entry.get()
-    bp_high = bp_hi_entry.get()
-    bp_low = bp_low_entry.get()
-    weight = wt_entry.get()
-
-    if glucose != "":
-        entry_db.insert_db_entry(TYPE_GLU, date(year=int(year_entry.get()), month=int(month_entry.get()), day=int(day_entry.get())), is_morning, glucose)
-        glu_entry.delete(0, END)
-
-    if ketones != "":
-        entry_db.insert_db_entry(TYPE_KET, date(year=int(year_entry.get()), month=int(month_entry.get()), day=int(day_entry.get())), is_morning, ketones)
-        ket_entry.delete(0, END)
     
-    if bp_high != "" or bp_low != "":
-        entry_db.insert_db_entry(TYPE_BP, date(year=int(year_entry.get()), month=int(month_entry.get()), day=int(day_entry.get())), is_morning, (bp_high, bp_low))
-        bp_hi_entry.delete(0, END)
-        bp_low_entry.delete(0, END)
-    
-    if weight != "":
-        entry_db.insert_db_entry(TYPE_WT, date(year=int(year_entry.get()), month=int(month_entry.get()), day=int(day_entry.get())), is_morning, weight)
-        wt_entry.delete(0, END)
+    new_entries = [glu_entry, ket_entry, (bp_hi_entry, bp_low_entry), wt_entry]
+    types_list = [TYPE_GLU, TYPE_KET, TYPE_BP, TYPE_WT]
+
+    for indx, type in enumerate(types_list):
+        if type != TYPE_BP and new_entries[indx].get() != "":
+            entry_date = date(year=int(year_entry.get()), month=int(month_entry.get()), day=int(day_entry.get()))
+            entry_db.insert_db_entry(type, entry_date, is_morning, new_entries[indx].get())
+            new_entries[indx].delete(0, END)
+        elif type == TYPE_BP and new_entries[indx][0].get() != "" and new_entries[indx][1].get() != "":
+            entry_date = date(year=int(year_entry.get()), month=int(month_entry.get()), day=int(day_entry.get()))
+            entry_db.insert_db_entry(type, entry_date, is_morning, (new_entries[indx][0].get(), new_entries[indx][1].get()))
+            new_entries[indx][0].delete(0, END)
+            new_entries[indx][1].delete(0, END)
 
     update_listboxes(glu_listbox, ket_listbox, bp_listbox, wt_listbox)
-    
+
+
 # Delete button callback
 def delete_command(glu_listbox: Listbox, ket_listbox: Listbox, bp_listbox: Listbox, wt_listbox: Listbox):
-    selected_indices1 = glu_listbox.curselection()
-    selected_indices2 = ket_listbox.curselection()
-    selected_indices3 = bp_listbox.curselection()
-    selected_indices4 = wt_listbox.curselection()
     
-    if selected_indices1 == (0,) or selected_indices2 == (0,) or selected_indices3 == (0,) or selected_indices4 == (0,):
-        return
-    elif selected_indices1 != ():
-        strip_text = glu_listbox.get(selected_indices1[0]).strip()
-        text = strip_text[1:list(strip_text).index("|",1)].strip()
-        if messagebox.askokcancel("Confirmation", "Are you sure you want to delete Glucose ID: " + str(text)):
-            entry_db.delete_db_entry(TYPE_GLU, text)
-    elif selected_indices2 != ():
-        strip_text = ket_listbox.get(selected_indices2[0]).strip()
-        text = strip_text[1:list(strip_text).index("|",1)].strip()
-        if messagebox.askokcancel("Confirmation", "Are you sure you want to delete Ketones ID: " + str(text)):
-            entry_db.delete_db_entry(TYPE_KET, text)
-    elif selected_indices3 != ():
-        strip_text = bp_listbox.get(selected_indices3[0]).strip()
-        text = strip_text[1:list(strip_text).index("|",1)].strip()
-        if messagebox.askokcancel("Confirmation", "Are you sure you want to delete BP ID: " + str(text)):
-            entry_db.delete_db_entry(TYPE_BP, text)
-    elif selected_indices4 != ():
-        strip_text = wt_listbox.get(selected_indices4[0]).strip()
-        text = strip_text[1:list(strip_text).index("|",1)].strip()
-        if messagebox.askokcancel("Confirmation", "Are you sure you want to delete Weight ID: " + str(text)):
-            entry_db.delete_db_entry(TYPE_WT, text)
+    lbox_list = [glu_listbox, ket_listbox, bp_listbox, wt_listbox]
+    val_names = ["Glucose", "Ketones", "BP", "Weight"]
+    types_list = [TYPE_GLU, TYPE_KET, TYPE_BP, TYPE_WT]
+
+    for indx, lbox in enumerate(lbox_list):
+        selected_indx = lbox.curselection()
+        if selected_indx == (0,):
+            return
+        elif len(selected_indx) >= 1:
+            strip_text = lbox.get(selected_indx[0]).strip()
+            text = strip_text[1:list(strip_text).index("|",1)].strip()
+            if messagebox.askokcancel("Confirmation", "Are you sure you want to delete "+val_names[indx]+" ID: " + str(text)):
+                entry_db.delete_db_entry(types_list[indx], text)
 
     update_listboxes(glu_listbox, ket_listbox, bp_listbox, wt_listbox)
+
 
 # Prints the entries to PDF
 def print_report_command():
     return 
 
+
 # Updates listbox entries
-def update_listboxes(glu_listbox: Listbox, ket_listbox: Listbox, bp_listbox: Listbox, wt_listbox: Listbox):
+def update_listboxes(list_boxlist: list):
+    
     bp_data_indx = 2
     data_table_names = ['GLUCOSE', 'KETONES', ('BP HIGH', 'BP LOW'), 'WEIGHT']
     data_tables = list(entry_db.get_all_database_entries())
-    lboxes = [glu_listbox, ket_listbox, bp_listbox, wt_listbox]
-
+    lboxes = list_boxlist
+    
     for indx, lbox in enumerate(lboxes):
-        sorted_data = sorted(data_tables[indx], key=get_date)
         lbox.delete(0, END)
         if indx != bp_data_indx:
             lbox.insert(0, f"| {'ID':^{ID_WIDTH+1}} | {'DATE':^{DATE_WIDTH+4}} | {'AM/PM':^{TYPE_WIDTH-4}} | {data_table_names[indx]:^{TYPE_WIDTH-6}} |")
             lbox.insert(1, f'{"-"*65:^{55}}')
-            for item in data_tables[indx]:
+            sorted_data = sorted(data_tables[indx], key=get_date)
+            for item in sorted_data:
                 am_pm = "AM" if item[2] == 1 else "PM"
                 id = str(item[0])
                 date = datetime.strptime(item[1], "%Y-%m-%d").strftime("%m-%d-%Y")
@@ -103,7 +86,8 @@ def update_listboxes(glu_listbox: Listbox, ket_listbox: Listbox, bp_listbox: Lis
         else:
             lbox.insert(0, f"| {'ID':^{ID_WIDTH+1}} | {'DATE':^{DATE_WIDTH+4}} | {'AM/PM':^{TYPE_WIDTH-4}} | {data_table_names[indx][0]:^{TYPE_WIDTH-5}} | {data_table_names[indx][1]:^{TYPE_WIDTH-5}} |")
             lbox.insert(1, f'{"-"*75:^{65}}')
-            for item in data_tables[indx]:
+            sorted_data = sorted(data_tables[indx], key=get_date)
+            for item in sorted_data:
                 am_pm = "AM" if item[2] == 1 else "PM"
                 id = str(item[0])
                 date = datetime.strptime(item[1], "%Y-%m-%d").strftime("%m-%d-%Y")
@@ -167,8 +151,8 @@ def generate_window(window):
     wt_listbox = Listbox(window, width=49, height=30)
     wt_scrollbar = Scrollbar(window, orient=VERTICAL, command=wt_listbox.yview)
     wt_listbox.config(yscrollcommand=wt_scrollbar.set)
-    
-    update_listboxes(glu_listbox, ket_listbox, bp_listbox, wt_listbox)
+    listbox_list = [glu_listbox, ket_listbox, bp_listbox, wt_listbox]
+    update_listboxes(listbox_list)
 
     # Create RadioButtons
     is_morning = IntVar()
@@ -194,8 +178,8 @@ def generate_window(window):
 
     # Create the buttons
     button_frame = Frame(window)
-    enter_button = Button(button_frame, text="Save", command=lambda: enter_command(glu_entry, ket_entry, bp_high_entry, bp_low_entry, wt_entry, 
-                                                                           glu_listbox, ket_listbox, bp_listbox, wt_listbox, is_morning, day_entry, mon_entry, year_entry))
+    enter_button = Button(button_frame, text="Enter", command=lambda: enter_command(glu_entry, ket_entry, bp_high_entry, bp_low_entry, wt_entry, glu_listbox, 
+                                                                                    ket_listbox, bp_listbox, wt_listbox, is_morning, day_entry, mon_entry, year_entry))
     delete_button = Button(button_frame, text="Delete", command=lambda: delete_command(glu_listbox, ket_listbox, bp_listbox, wt_listbox))
     print_report_button = Button(button_frame, text="Print Report", command=lambda: print_report_command())
     make_backup_button = Button(button_frame, text="Backup", command=lambda: entry_db.backup_database())
@@ -253,7 +237,7 @@ def generate_window(window):
 entry_db = EntryDatabase()
 
 if __name__ == "__main__":
-    
+    # entry_db.delete_db_entry(TYPE_WT, 40)
     # Create the main window
     window = Tk()
     
