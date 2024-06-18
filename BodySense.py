@@ -3,6 +3,10 @@ from tkinter import messagebox
 from datetime import date
 from datetime import datetime
 from EntryDatabase import EntryDatabase
+from PrintDatesWindow import PrintDatesWindow
+from ReportPrinter import ReportPrinter
+import subprocess
+import os
 
 TYPE_GLU = "glu"
 TYPE_KET = "ket"
@@ -15,8 +19,7 @@ LEADING_SPACE = 15
 
 # Enter button function
 def enter_command(glu_entry: Entry, ket_entry: Entry, bp_hi_entry: Entry, bp_low_entry: Entry, wt_entry: Entry,
-                 glu_listbox: Listbox, ket_listbox: Listbox, bp_listbox: Listbox, wt_listbox: Listbox, is_morning: bool,
-                 day_entry: Entry, month_entry: Entry, year_entry: Entry):
+                listbox_list: list, is_morning: bool, day_entry: Entry, month_entry: Entry, year_entry: Entry):
     
     new_entries = [glu_entry, ket_entry, (bp_hi_entry, bp_low_entry), wt_entry]
     types_list = [TYPE_GLU, TYPE_KET, TYPE_BP, TYPE_WT]
@@ -32,13 +35,13 @@ def enter_command(glu_entry: Entry, ket_entry: Entry, bp_hi_entry: Entry, bp_low
             new_entries[indx][0].delete(0, END)
             new_entries[indx][1].delete(0, END)
 
-    update_listboxes(glu_listbox, ket_listbox, bp_listbox, wt_listbox)
+    update_listboxes(listbox_list)
 
 
 # Delete button callback
-def delete_command(glu_listbox: Listbox, ket_listbox: Listbox, bp_listbox: Listbox, wt_listbox: Listbox):
+def delete_command(listbox_list: list):
     
-    lbox_list = [glu_listbox, ket_listbox, bp_listbox, wt_listbox]
+    lbox_list = listbox_list
     val_names = ["Glucose", "Ketones", "BP", "Weight"]
     types_list = [TYPE_GLU, TYPE_KET, TYPE_BP, TYPE_WT]
 
@@ -52,13 +55,24 @@ def delete_command(glu_listbox: Listbox, ket_listbox: Listbox, bp_listbox: Listb
             if messagebox.askokcancel("Confirmation", "Are you sure you want to delete "+val_names[indx]+" ID: " + str(text)):
                 entry_db.delete_db_entry(types_list[indx], text)
 
-    update_listboxes(glu_listbox, ket_listbox, bp_listbox, wt_listbox)
+    update_listboxes(listbox_list)
 
 
 # Prints the entries to PDF
-def print_report_command():
-    return 
-
+def print_report_command(root):
+    os.makedirs(entry_db.get_path_root()+"\\Reports", exist_ok=True)
+    dates_win = PrintDatesWindow(root)
+    if dates_win.ok_clicked:
+        report_printer = ReportPrinter(dates_win.from_date, dates_win.to_date)
+        report = report_printer.buildReport()
+        report_name = "report_"+report_printer.from_date.strftime("%m-%d-%y")+"_to_"+report_printer.to_date.strftime("%m-%d-%y")+".pdf"
+        report.output(entry_db.get_path_root()+"\\Reports\\"+report_name, "F")        
+        try:
+            subprocess.Popen(["C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe", "/p", entry_db.get_path_root()+"\\Reports\\"+report_name])
+        except FileNotFoundError:
+            file = entry_db.get_path_root()+"\\Reports\\"+report_name
+            print(f"Error: PDF file not found: {file}")
+    
 
 # Updates listbox entries
 def update_listboxes(list_boxlist: list):
@@ -151,6 +165,7 @@ def generate_window(window):
     wt_listbox = Listbox(window, width=49, height=30)
     wt_scrollbar = Scrollbar(window, orient=VERTICAL, command=wt_listbox.yview)
     wt_listbox.config(yscrollcommand=wt_scrollbar.set)
+
     listbox_list = [glu_listbox, ket_listbox, bp_listbox, wt_listbox]
     update_listboxes(listbox_list)
 
@@ -178,10 +193,10 @@ def generate_window(window):
 
     # Create the buttons
     button_frame = Frame(window)
-    enter_button = Button(button_frame, text="Enter", command=lambda: enter_command(glu_entry, ket_entry, bp_high_entry, bp_low_entry, wt_entry, glu_listbox, 
-                                                                                    ket_listbox, bp_listbox, wt_listbox, is_morning, day_entry, mon_entry, year_entry))
-    delete_button = Button(button_frame, text="Delete", command=lambda: delete_command(glu_listbox, ket_listbox, bp_listbox, wt_listbox))
-    print_report_button = Button(button_frame, text="Print Report", command=lambda: print_report_command())
+    enter_button = Button(button_frame, text="Enter", command=lambda: enter_command(glu_entry, ket_entry, bp_high_entry, bp_low_entry, wt_entry,
+                                                                                    listbox_list, is_morning, day_entry, mon_entry, year_entry))
+    delete_button = Button(button_frame, text="Delete", command=lambda: delete_command(listbox_list))
+    print_report_button = Button(button_frame, text="Print Report", command=lambda: print_report_command(window))
     make_backup_button = Button(button_frame, text="Backup", command=lambda: entry_db.backup_database())
 
     # Arrange the widgets in the window
@@ -233,8 +248,10 @@ def generate_window(window):
     # Center window
     center_window(window)
 
+
 # Create database object
 entry_db = EntryDatabase()
+
 
 if __name__ == "__main__":
     # entry_db.delete_db_entry(TYPE_WT, 40)

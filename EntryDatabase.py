@@ -11,8 +11,8 @@ TYPE_WT = "wt"
 
 class EntryDatabase:
     def __init__(self):
-        os.makedirs(self.get_path_root()+"\\BodySense", exist_ok=True)
-        self.path = self.get_path_root() + "BodySense\\readings.db"
+        os.makedirs(self.get_path_root()+ "\\Readings", exist_ok=True)
+        self.path = self.get_path_root() + "\\Readings\\readings.db"
         self.create_database(self.path)
 
 
@@ -99,10 +99,10 @@ class EntryDatabase:
     # Backup database keeping the ten most recent backups
     ##TODO Need to fix the ordering of backups to delete the oldest one when there are 10
     def backup_database(self):
-        os.makedirs(self.get_path_root()+"\\BodySense\\backups", exist_ok=True)
-        backups = [f for f in Path(self.path[0:self.path.rindex("\\")]+"\\backups").iterdir() if f.is_file()]
+        os.makedirs(self.get_path_root()+"\\Backups", exist_ok=True)
+        backups = [f for f in Path(self.get_path_root()+"\\Backups").iterdir() if f.is_file()]
         backup_count = len(backups)
-        shutil.copy2(self.path, self.path[0:-11]+"\\backups\\backup_"+str(backup_count)+"_On_"+str(date.today())+".db")
+        shutil.copy2(self.path, self.get_path_root()+"\\Backups\\backup_"+str(backup_count)+"_On_"+str(date.today())+".db")
 
 
     # Determine the root up to the current user's home directory (Windows only)
@@ -116,4 +116,4 @@ class EntryDatabase:
             if cwd[index] == "\\":
                 slashes += 1
             index += 1
-        return root_path
+        return root_path + "BodySense"
