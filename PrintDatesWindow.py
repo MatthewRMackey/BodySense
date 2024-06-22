@@ -1,5 +1,5 @@
 from tkinter import *
-from datetime import date, datetime, timedelta
+from datetime import datetime, timedelta
 
 
 class PrintDatesWindow:
