@@ -26,7 +26,7 @@ def enter_command(glu_entry: Entry, ket_entry: Entry, bp_hi_entry: Entry, bp_low
     new_entries = [glu_entry, ket_entry, (bp_hi_entry, bp_low_entry), wt_entry]
     types_list = [TYPE_GLU, TYPE_KET, TYPE_BP, TYPE_WT]
     try:
-        int(glu_entry.get())
+        float(glu_entry.get())
         float(ket_entry.get())
         int(bp_hi_entry.get())
         int(bp_low_entry.get())
