@@ -5,8 +5,11 @@ from datetime import datetime
 from EntryDatabase import EntryDatabase
 from PrintDatesWindow import PrintDatesWindow
 from ReportPrinter import ReportPrinter
-import subprocess
+from LogPrinter import LogPrinter
+
 import os
+import subprocess
+
 
 TYPE_GLU = "glu"
 TYPE_KET = "ket"
@@ -20,27 +23,54 @@ LEADING_SPACE = 15
 # Enter button function
 def enter_command(glu_entry: Entry, ket_entry: Entry, bp_hi_entry: Entry, bp_low_entry: Entry, wt_entry: Entry,
                 listbox_list: list, is_morning: bool, day_entry: Entry, month_entry: Entry, year_entry: Entry):
-    
     new_entries = [glu_entry, ket_entry, (bp_hi_entry, bp_low_entry), wt_entry]
     types_list = [TYPE_GLU, TYPE_KET, TYPE_BP, TYPE_WT]
+    try:
+        int(glu_entry.get())
+        float(ket_entry.get())
+        int(bp_hi_entry.get())
+        int(bp_low_entry.get())
+        float(wt_entry.get())
+        for indx, type in enumerate(types_list):
+            if type != TYPE_BP and new_entries[indx].get() != "":
+                entry_date = date(year=int(year_entry.get()), month=int(month_entry.get()), day=int(day_entry.get()))
+                entry_db.insert_db_entry(type, entry_date, is_morning, new_entries[indx].get())
+                new_entries[indx].delete(0, END)
+            elif type == TYPE_BP and new_entries[indx][0].get() != "" and new_entries[indx][1].get() != "":
+                entry_date = date(year=int(year_entry.get()), month=int(month_entry.get()), day=int(day_entry.get()))
+                entry_db.insert_db_entry(type, entry_date, is_morning, (new_entries[indx][0].get(), new_entries[indx][1].get()))
+                new_entries[indx][0].delete(0, END)
+                new_entries[indx][1].delete(0, END)
 
-    for indx, type in enumerate(types_list):
-        if type != TYPE_BP and new_entries[indx].get() != "":
-            entry_date = date(year=int(year_entry.get()), month=int(month_entry.get()), day=int(day_entry.get()))
-            entry_db.insert_db_entry(type, entry_date, is_morning, new_entries[indx].get())
-            new_entries[indx].delete(0, END)
-        elif type == TYPE_BP and new_entries[indx][0].get() != "" and new_entries[indx][1].get() != "":
-            entry_date = date(year=int(year_entry.get()), month=int(month_entry.get()), day=int(day_entry.get()))
-            entry_db.insert_db_entry(type, entry_date, is_morning, (new_entries[indx][0].get(), new_entries[indx][1].get()))
-            new_entries[indx][0].delete(0, END)
-            new_entries[indx][1].delete(0, END)
+        update_listboxes(listbox_list)
 
-    update_listboxes(listbox_list)
+    except ValueError as e:
+        # Create and print out the input error
+        log = LogPrinter()
+        log.log_output(e, [glu_entry.get(), ket_entry.get(), (bp_low_entry.get(), bp_low_entry.get()), wt_entry.get()])
+
+        # Create a popup window
+        root = Tk()
+        root.title("Input Error")
+
+        # Center and size
+        screen_width = root.winfo_screenwidth()
+        screen_height = root.winfo_screenheight()
+        window_width = 300
+        window_height = 100
+        x_offset = (screen_width - window_width) // 2
+        y_offset = (screen_height - window_height) // 2
+        root.geometry(f"{window_width}x{window_height}+{x_offset}+{y_offset}")
+    
+        # Add widgets
+        warning_text = Label(root, text=f"Error processing inputs, check their formats. \nIf this problem persists, please call your local Matthew.")
+        warning_text.pack()
+        confirm_button = Button(root, text="OK", command=lambda: root.destroy())
+        confirm_button.pack()
 
 
 # Delete button callback
 def delete_command(listbox_list: list):
-    
     lbox_list = listbox_list
     val_names = ["Glucose", "Ketones", "BP", "Weight"]
     types_list = [TYPE_GLU, TYPE_KET, TYPE_BP, TYPE_WT]
@@ -76,7 +106,6 @@ def print_report_command(root):
 
 # Updates listbox entries
 def update_listboxes(list_boxlist: list):
-    
     bp_data_indx = 2
     data_table_names = ['GLUCOSE', 'KETONES', ('BP HIGH', 'BP LOW'), 'WEIGHT']
     data_tables = list(entry_db.get_all_database_entries())
@@ -111,7 +140,7 @@ def update_listboxes(list_boxlist: list):
                     id = "0"+id
                 lbox.insert(2, f"| {id:^{ID_WIDTH}} | {date:^{DATE_WIDTH}} | {am_pm:^{TYPE_WIDTH}} | {high:^{TYPE_WIDTH}} | {low:^{TYPE_WIDTH}} |")
 
-
+# Obvious
 def get_date(element):
     date_str = element[1]
     date_obj = datetime.strptime(date_str, "%Y-%m-%d")
@@ -132,7 +161,6 @@ def center_window(window):
 
 # Builds window elements
 def generate_window(window):
-   
     window.title("BodySense: Readings")
     
     # Create labels for input boxes
@@ -254,7 +282,6 @@ entry_db = EntryDatabase()
 
 
 if __name__ == "__main__":
-    # entry_db.delete_db_entry(TYPE_WT, 40)
     # Create the main window
     window = Tk()
     

@@ -4,7 +4,6 @@ from datetime import datetime, timedelta
 
 class PrintDatesWindow:
     def __init__(self, root):
-        """Creates and displays a new window with an entry box, OK, and Cancel buttons."""
         self.from_date = datetime.today() - timedelta(days=30)
         self.to_date = datetime.today()
         self.ok_clicked = False
@@ -61,8 +60,6 @@ class PrintDatesWindow:
             root.update()
 
     def ok_button_clicked(self):
-        """Gets the text from the entry box and closes the new window."""
-
         from_day = self.from_day_entry.get()
         from_mon = self.from_mon_entry.get()
         from_year = self.from_year_entry.get()
@@ -79,7 +76,6 @@ class PrintDatesWindow:
         self.new_window.destroy()  # Close the new window
     
     def cancel_button_clicked(self):
-        """Simply closes the new window on Cancel button click."""
         self.new_window.destroy()
 
     # Centers the window

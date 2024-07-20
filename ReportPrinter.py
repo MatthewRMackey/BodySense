@@ -16,7 +16,6 @@ class ReportPrinter:
     # Builds a list storing output rows.
     # TODO Refactor this into separate
     def buildOutputList(self):
-        
         data_tables = list(self.entry_db.get_all_database_entries())
         key_dict = {}
         output_table = []
