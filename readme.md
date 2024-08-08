@@ -11,7 +11,7 @@ Current values that can be stored are:
 There can be multiple entries a day, and there indicators of morning or evening readings; the idea being many diabetics check their glucose multiple times a day. 
 
 ## Reports
-The user is asked to enter a date range 
+The user is asked to enter a date range for the report. All enteries from one date to the next will be combined into a pdf file that is saved and can be printed.
 
 ## Examples
 ### GUI
