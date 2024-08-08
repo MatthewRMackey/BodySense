@@ -15,14 +15,14 @@ The user is asked to enter a date range
 
 ## Examples
 ### GUI
-![User Interface](/Dev/media/gui1.png)
+![User Interface](/media/gui1.png)
 
 ### Bad Inputs
-![Some Input Validation](/Dev/media/input_valid1.png)
-![More Input Validation](/Dev/media/input_valid2.png)
+![Some Input Validation](/media/input_valid1.png)
+![More Input Validation](/media/input_valid2.png)
 
 ### Choose Report Dates
-![Report Dates](/Dev/media/report_date_window.png)
+![Report Dates](/media/report_date_window.png)
 
 ### Reports
-![Report](/Dev/media/report.png)
+![Report](/media/report.png)
