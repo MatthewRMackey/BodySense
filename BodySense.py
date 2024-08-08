@@ -25,12 +25,28 @@ def enter_command(glu_entry: Entry, ket_entry: Entry, bp_hi_entry: Entry, bp_low
                 listbox_list: list, is_morning: bool, day_entry: Entry, month_entry: Entry, year_entry: Entry):
     new_entries = [glu_entry, ket_entry, (bp_hi_entry, bp_low_entry), wt_entry]
     types_list = [TYPE_GLU, TYPE_KET, TYPE_BP, TYPE_WT]
+    failed_on = ""
     try:
-        float(glu_entry.get())
-        float(ket_entry.get())
-        int(bp_hi_entry.get())
-        int(bp_low_entry.get())
-        float(wt_entry.get())
+        if glu_entry.get() != "":
+            failed_on = "Glucose"
+            float(glu_entry.get())
+        if ket_entry.get() != "":
+            failed_on = "Ketones"
+            float(ket_entry.get())
+        if bp_hi_entry.get() != "":
+            failed_on = "BP High"
+            int(bp_hi_entry.get())
+        if bp_low_entry.get() != "":    
+            failed_on = "BP Low"
+            int(bp_low_entry.get())
+        if wt_entry.get() != "":
+            failed_on = "Weight"
+            float(wt_entry.get())
+        failed_on = "Date"
+        int(day_entry.get())
+        int(month_entry.get())
+        int(year_entry.get())
+        failed_on = ""
         for indx, type in enumerate(types_list):
             if type != TYPE_BP and new_entries[indx].get() != "":
                 entry_date = date(year=int(year_entry.get()), month=int(month_entry.get()), day=int(day_entry.get()))
@@ -56,14 +72,26 @@ def enter_command(glu_entry: Entry, ket_entry: Entry, bp_hi_entry: Entry, bp_low
         # Center and size
         screen_width = root.winfo_screenwidth()
         screen_height = root.winfo_screenheight()
-        window_width = 300
+        window_width = 350
         window_height = 100
         x_offset = (screen_width - window_width) // 2
         y_offset = (screen_height - window_height) // 2
         root.geometry(f"{window_width}x{window_height}+{x_offset}+{y_offset}")
     
+        if failed_on == "Glucose":
+            failed_val = glu_entry.get()
+        elif failed_on == "Ketones":
+            failed_val = ket_entry.get()
+        elif failed_on == "BP High":
+            failed_val = bp_hi_entry.get()
+        elif failed_on == "BP Low":
+            failed_val = bp_low_entry.get()    
+        elif failed_on == "Weight":
+            failed_val = wt_entry.get()
+        elif failed_on == "Date":
+            failed_val = month_entry.get()+"/"+day_entry.get()+"/"+year_entry.get()
         # Add widgets
-        warning_text = Label(root, text=f"Error processing inputs, check their formats. \nIf this problem persists, please call your local Matthew.")
+        warning_text = Label(root, text=f"Error processing inputs. Failed on {failed_on} with value of: {failed_val}")
         warning_text.pack()
         confirm_button = Button(root, text="OK", command=lambda: root.destroy())
         confirm_button.pack()

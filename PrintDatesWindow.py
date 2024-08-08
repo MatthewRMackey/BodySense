@@ -59,6 +59,7 @@ class PrintDatesWindow:
         while not self.ok_clicked and self.new_window.winfo_exists():
             root.update()
 
+    # Ok button call
     def ok_button_clicked(self):
         from_day = self.from_day_entry.get()
         from_mon = self.from_mon_entry.get()
@@ -68,13 +69,36 @@ class PrintDatesWindow:
         to_mon = self.to_mon_entry.get()
         to_year = self.to_year_entry.get()
 
-        self.from_date = datetime.strptime(from_year+"-"+from_mon+"-"+from_day, "%Y-%m-%d")
-        self.to_date = datetime.strptime(to_year+"-"+to_mon+"-"+to_day, "%Y-%m-%d")
-        self.ok_clicked = True
+        try:
+            self.from_date = datetime.strptime(from_year+"-"+from_mon+"-"+from_day, "%Y-%m-%d")
+            self.to_date = datetime.strptime(to_year+"-"+to_mon+"-"+to_day, "%Y-%m-%d")
+            self.ok_clicked = True
 
-        # Process the entered text here (e.g., print it, store it)
-        self.new_window.destroy()  # Close the new window
-    
+            self.new_window.destroy()
+
+        except ValueError as e:
+            # Create a popup window
+            root = Tk()
+            root.title("Input Error")
+
+            # Center and size
+            screen_width = root.winfo_screenwidth()
+            screen_height = root.winfo_screenheight()
+            window_width = 350
+            window_height = 100
+            x_offset = (screen_width - window_width) // 2
+            y_offset = (screen_height - window_height) // 2
+            root.geometry(f"{window_width}x{window_height}+{x_offset}+{y_offset}")
+
+            # Add widgets
+            err_from_date = from_mon+"/"+from_day+"/"+from_year
+            err_to_date = to_mon+"/"+to_day+"/"+to_year
+            warning_text = Label(root, text=f"Could not use date entered.\nFrom Date: {err_from_date}\nTo Date: {err_to_date}")
+            warning_text.pack()
+            confirm_button = Button(root, text="OK", command=lambda: root.destroy())
+            confirm_button.pack()
+
+    # Cancel button call    
     def cancel_button_clicked(self):
         self.new_window.destroy()
 
